@@ -696,15 +696,6 @@ tables:
     docs_url: insert_link_here
     etl_url: insert_link_here
 
-  - id: analytics_aggregated_intents_bronze
-    schema: analytics_aggregated
-    name: intents_bronze
-    layer: review
-    icon: created
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
   - id: mysql_replica_client_retention_audience
     schema: mysql_replica
     name: client_retention_audience
