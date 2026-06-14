@@ -55,13 +55,15 @@ from ruamel.yaml import YAML
 MONITORED_SCHEMAS = ["analytics", "analytics_aggregated", "mysql_replica"]
 
 # Which ClickHouse engines should appear in the diagram.
-# DEFAULT: include the MergeTree family (real data tables) + materialized views.
-# Exclude plain View / Dictionary / Distributed.
+# We show TABLES only — including tables that are *populated by* a materialized
+# view (those are ordinary MergeTree tables; a human marks them is_mview: true
+# in the YAML). We do NOT show the materialized-view OBJECTS themselves, nor
+# plain Views / Dictionaries / Distributed proxies.
 # >>> Adjust here if your `GROUP BY engine` audit shows you want others. <<<
 def engine_is_included(engine: str) -> bool:
     e = engine or ""
-    if "MaterializedView" in e:        # materialized views: include (flagged is_mview)
-        return True
+    if "MaterializedView" in e:        # the MV object itself: EXCLUDE (not a table)
+        return False
     if e == "View":                    # plain saved-query views: exclude
         return False
     if e == "Dictionary":              # dictionaries: exclude
@@ -69,7 +71,8 @@ def engine_is_included(engine: str) -> bool:
     if e.startswith("Distributed"):    # distributed proxies: exclude
         return False
     # everything else (MergeTree, ReplacingMergeTree, SummingMergeTree,
-    # AggregatingMergeTree, ReplicatedMergeTree, Log, Memory, etc.) -> include
+    # AggregatingMergeTree, ReplicatedMergeTree, Shared*MergeTree, Log, Memory,
+    # etc.) -> include
     return True
 
 
@@ -139,16 +142,21 @@ def get_clickhouse_client():
 
 def fetch_live_tables(client) -> dict:
     """
-    Returns a dict keyed by (schema, name) -> {"is_mview": bool}
-    for every table in the monitored schemas that passes the engine filter.
+    Returns a dict keyed by (schema, name) -> {} for every TABLE in the
+    monitored schemas that passes the engine filter.
+
+    Note: materialized-view OBJECTS are excluded by engine_is_included(), so
+    everything returned here is an ordinary table. Whether a table is
+    *populated by* a materialized view is a human judgement recorded as
+    is_mview: true in the YAML — it is NOT something system.tables can tell us,
+    so the scanner never sets it.
     """
     schemas_sql = ", ".join("'%s'" % s for s in MONITORED_SCHEMAS)
     query = f"""
         SELECT
             database,
             name,
-            engine,
-            engine LIKE '%MaterializedView%' AS is_mview
+            engine
         FROM system.tables
         WHERE database IN ({schemas_sql})
           AND is_temporary = 0
@@ -158,10 +166,10 @@ def fetch_live_tables(client) -> dict:
     """
     result = client.query(query)
     live = {}
-    for database, name, engine, is_mview in result.result_rows:
+    for database, name, engine in result.result_rows:
         if not engine_is_included(engine):
             continue
-        live[(database, name)] = {"is_mview": bool(is_mview)}
+        live[(database, name)] = {}
     return live
 
 
@@ -209,7 +217,7 @@ def reconcile(data, live: dict):
             "name": name,
             "layer": REVIEW_LAYER,
             "icon": ICON_CREATED,
-            "is_mview": meta["is_mview"],
+            "is_mview": False,   # human sets true later if the table is fed by an MV
             "docs_url": PLACEHOLDER,
             "etl_url": PLACEHOLDER,
         }
@@ -244,8 +252,9 @@ def reconcile(data, live: dict):
                 # leave layer + links exactly where the human had them.
                 row["icon"] = ICON_NONE
                 reappeared.append(f"{schema}.{name}")
-            # keep is_mview in sync with reality (cheap, harmless)
-            row["is_mview"] = live[(schema, name)]["is_mview"]
+            # NOTE: is_mview is a HUMAN-OWNED field. The scanner cannot tell
+            # whether a table is populated by a materialized view, so we never
+            # touch it here — doing so would wipe the human's label every run.
 
     return added, dropped, reappeared
 
