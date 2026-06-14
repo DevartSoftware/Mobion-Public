@@ -595,7 +595,7 @@ tables:
     schema: analytics_aggregated
     name: mv_order_flow_1m
     layer: review
-    icon: created
+    icon: dropped
     is_mview: true
     docs_url: insert_link_here
     etl_url: insert_link_here
@@ -604,7 +604,7 @@ tables:
     schema: analytics_aggregated
     name: mv_order_last_state
     layer: review
-    icon: created
+    icon: dropped
     is_mview: true
     docs_url: insert_link_here
     etl_url: insert_link_here
