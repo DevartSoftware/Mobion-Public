@@ -24,7 +24,7 @@ pipeline {
                 usernamePassword(credentialsId: 'da998f8b-eab9-4f19-ac3f-e69c1528b88b', passwordVariable: 'CLICKHOUSE_PASSWORD', usernameVariable: 'CLICKHOUSE_USERNAME')
                 ]) {
                     dir ('.\\Clickhouse_diagram') {
-                        powershell 'python dry_run.py'
+                        powershell 'python clickhouse_diagram.py'
                         }
                 }
             }

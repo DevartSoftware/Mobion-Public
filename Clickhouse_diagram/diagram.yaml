@@ -230,15 +230,6 @@ tables:
     docs_url: insert_link_here
     etl_url: insert_link_here
 
-  - id: a_surge_external
-    schema: analytics
-    name: surge_external
-    layer: bronze
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
   - id: a_surge_log
     schema: analytics
     name: surge_log
@@ -251,15 +242,6 @@ tables:
   - id: a_surge_log_v2
     schema: analytics
     name: surge_log_v2
-    layer: bronze
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
-  - id: a_surge_log_v3
-    schema: analytics
-    name: surge_log_v3
     layer: bronze
     icon: none
     is_mview: false
