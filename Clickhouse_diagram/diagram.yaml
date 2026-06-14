@@ -325,7 +325,7 @@ tables:
     schema: analytics_aggregated
     name: estimates_intents_bronze
     layer: bronze
-    icon: none
+    icon: flash
     is_mview: false
     docs_url: insert_link_here
     etl_url: https://git.devart.com/taxi/Analytics/-/blob/master/Automation/ch_estimates_intents_bronze.py
@@ -451,7 +451,7 @@ tables:
     schema: analytics_aggregated
     name: quick_cities_filter
     layer: bronze
-    icon: none
+    icon: clock
     is_mview: false
     docs_url: https://mobion.atlassian.net/wiki/spaces/MM/pages/407207940/quick_cities_filter+CH
     etl_url: https://git.devart.com/taxi/Analytics/-/blob/master/Automation/ch_quick_cities_filter.py
