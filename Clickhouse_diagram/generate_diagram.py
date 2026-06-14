@@ -285,7 +285,7 @@ def generate_html(data: dict) -> str:
     overflow: visible;
   }}
 
-  .legend {{ display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; align-items: center; }}
+  .legend {{ display: flex; gap: 16px; margin-top: 4px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }}
   .legend-item {{ display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text2); }}
   .li-box {{ width: 10px; height: 10px; border-radius: 2px; }}
   .li-src {{ background: var(--hl-src-bg); border: 0.5px solid var(--hl-src-bd); }}
@@ -302,28 +302,6 @@ def generate_html(data: dict) -> str:
   <button class="ctrl-btn" onclick="setSchema('analytics_aggregated', this)">analytics_aggregated</button>
   <button class="ctrl-btn" onclick="setSchema('mysql_replica', this)">mysql_replica</button>
   <span class="hint">Hover to preview lineage · Click to lock · Click elsewhere to clear</span>
-</div>
-
-<div class="scroll-wrap" id="scroll-wrap">
-  <div class="lanes" id="lanes">
-    <div class="lane lane-bronze">
-      <div class="lane-hdr"><div class="hdot hd-bronze"></div><span class="htitle">Bronze</span><span class="hsub">raw ingestion</span></div>
-      <div id="col-bronze"></div>
-    </div>
-    <div class="lane lane-silver">
-      <div class="lane-hdr"><div class="hdot hd-silver"></div><span class="htitle">Silver</span><span class="hsub">cleaned</span></div>
-      <div id="col-silver"></div>
-    </div>
-    <div class="lane lane-gold">
-      <div class="lane-hdr"><div class="hdot hd-gold"></div><span class="htitle">Gold</span><span class="hsub">analytics-ready</span></div>
-      <div id="col-gold"></div>
-    </div>
-    <div class="lane lane-review">
-      <div class="lane-hdr"><div class="hdot hd-review"></div><span class="htitle">Review</span><span class="hsub">new / dropped — needs triage</span></div>
-      <div id="col-review"></div>
-    </div>
-  </div>
-  <svg class="edges" id="edge-svg"></svg>
 </div>
 
 <div class="legend">
@@ -374,6 +352,29 @@ def generate_html(data: dict) -> str:
     <span style="font-size:10px;color:var(--dim-color);border:0.5px solid var(--dim-bd);padding:1px 5px;border-radius:3px;opacity:0.6;">Docs</span>
     Link not yet added
   </div>
+</div>
+
+
+<div class="scroll-wrap" id="scroll-wrap">
+  <div class="lanes" id="lanes">
+    <div class="lane lane-bronze">
+      <div class="lane-hdr"><div class="hdot hd-bronze"></div><span class="htitle">Bronze</span><span class="hsub">raw ingestion</span></div>
+      <div id="col-bronze"></div>
+    </div>
+    <div class="lane lane-silver">
+      <div class="lane-hdr"><div class="hdot hd-silver"></div><span class="htitle">Silver</span><span class="hsub">cleaned</span></div>
+      <div id="col-silver"></div>
+    </div>
+    <div class="lane lane-gold">
+      <div class="lane-hdr"><div class="hdot hd-gold"></div><span class="htitle">Gold</span><span class="hsub">analytics-ready</span></div>
+      <div id="col-gold"></div>
+    </div>
+    <div class="lane lane-review">
+      <div class="lane-hdr"><div class="hdot hd-review"></div><span class="htitle">Review</span><span class="hsub">new / dropped — needs triage</span></div>
+      <div id="col-review"></div>
+    </div>
+  </div>
+  <svg class="edges" id="edge-svg"></svg>
 </div>
 
 <script>
