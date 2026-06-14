@@ -146,7 +146,7 @@ tables:
     layer: bronze
     icon: none
     is_mview: false
-    docs_url: insert_link_here
+    docs_url: https://mobion.atlassian.net/wiki/spaces/MM/pages/18383060/driver_list
     etl_url: insert_link_here
 
   - id: a_estimate_log
@@ -303,15 +303,6 @@ tables:
     docs_url: insert_link_here
     etl_url: insert_link_here
 
-  - id: aa_driver_list_ua
-    schema: analytics_aggregated
-    name: driver_list_ua
-    layer: review
-    icon: none
-    is_mview: false
-    docs_url: https://mobion.atlassian.net/wiki/spaces/MM/pages/18383060/driver_list
-    etl_url: insert_link_here
-
   - id: aa_driver_order_stat
     schema: analytics_aggregated
     name: driver_order_stat
@@ -324,15 +315,6 @@ tables:
   - id: aa_driver_order_stat_archive_20251227
     schema: analytics_aggregated
     name: driver_order_stat_archive_20251227
-    layer: review
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
-  - id: aa_effective_radius
-    schema: analytics_aggregated
-    name: effective_radius
     layer: review
     icon: none
     is_mview: false
@@ -402,15 +384,6 @@ tables:
     docs_url: insert_link_here
     etl_url: insert_link_here
 
-  - id: aa_matching_stat_by_driver
-    schema: analytics_aggregated
-    name: matching_stat_by_driver
-    layer: review
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
   - id: aa_operations_client_churn_28d
     schema: analytics_aggregated
     name: operations_client_churn_28d
@@ -474,14 +447,6 @@ tables:
     docs_url: https://confluence.example.com/wiki/display/DATA/order_stats_gold
     etl_url: https://gitlab.example.com/etl/analytics_aggregated/order_stats_gold.sql
 
-  - id: aa_orders_polygons_live
-    schema: analytics_aggregated
-    name: orders_polygons_live
-    layer: review
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
 
   - id: aa_quick_cities_filter
     schema: analytics_aggregated
@@ -576,15 +541,6 @@ tables:
   - id: aa_test_driver_activity_1m_hex2
     schema: analytics_aggregated
     name: test_driver_activity_1m_hex2
-    layer: review
-    icon: none
-    is_mview: false
-    docs_url: insert_link_here
-    etl_url: insert_link_here
-
-  - id: aa_tmp_device_list
-    schema: analytics_aggregated
-    name: tmp_device_list
     layer: review
     icon: none
     is_mview: false
