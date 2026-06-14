@@ -23,8 +23,8 @@ pipeline {
                 string(credentialsId: '14a037c9-9b15-4786-a8a3-4b3ad059f8b2', variable: 'GITHUB_TOKEN'),
                 usernamePassword(credentialsId: 'da998f8b-eab9-4f19-ac3f-e69c1528b88b', passwordVariable: 'CLICKHOUSE_PASSWORD', usernameVariable: 'CLICKHOUSE_USERNAME')
                 ]) {
-                    dir ('.\\Automation') {
-                        powershell 'python clickhouse_diagram.py'
+                    dir ('.\\Clickhouse_diagram') {
+                        powershell 'python dry_run.py'
                         }
                 }
             }
