@@ -290,6 +290,65 @@ def generate_html(data: dict) -> str:
   .li-box {{ width: 10px; height: 10px; border-radius: 2px; }}
   .li-src {{ background: var(--hl-src-bg); border: 0.5px solid var(--hl-src-bd); }}
   .li-dst {{ background: var(--hl-dst-bg); border: 0.5px solid var(--hl-dst-bd); }}
+
+  /* ===== Focus-mode overlay ===== */
+  .focus-backdrop {{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(2px);
+    display: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }}
+  .focus-backdrop.show {{ display: block; opacity: 1; }}
+  @media (prefers-color-scheme: dark) {{
+    .focus-backdrop {{ background: rgba(0,0,0,0.6); }}
+  }}
+  .focus-panel {{
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    transition: transform 0.18s ease;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: 14px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.28);
+    padding: 22px 24px 20px;
+    max-width: min(94vw, 1100px);
+    max-height: 90vh;
+    overflow: auto;
+  }}
+  .focus-backdrop.show .focus-panel {{ transform: translate(-50%, -50%) scale(1); }}
+  .focus-title {{
+    font-size: 12px; color: var(--text2); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }}
+  .focus-title b {{ color: var(--text); font-weight: 600; }}
+  .focus-hint {{ margin-left: auto; font-size: 10px; color: var(--text3); }}
+  .focus-stage {{ position: relative; }}
+  .focus-cols {{ display: flex; gap: 60px; align-items: flex-start; }}
+  .focus-col {{ display: flex; flex-direction: column; gap: 18px; min-width: 180px; }}
+  .focus-col-lbl {{
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--text3); margin-bottom: 2px; text-align: center;
+  }}
+  .fcard {{
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 10px 12px;
+    width: 200px;
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+  }}
+  .fcard:hover {{ box-shadow: 0 4px 16px rgba(0,0,0,0.12); transform: translateY(-1px); }}
+  .fcard.is-center {{ border-color: var(--hl-bd); box-shadow: 0 0 0 2px var(--hl-bg); cursor: default; }}
+  .fcard .schema-lbl {{ font-size: 10px; }}
+  .fcard .tname {{ font-size: 13px; }}
+  .fcard .card-links {{ margin-top: 8px; }}
+  .fcard .clink {{ font-size: 10px; padding: 2px 8px; }}
+  .focus-svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 1; }}
 </style>
 </head>
 <body>
@@ -377,6 +436,19 @@ def generate_html(data: dict) -> str:
   <svg class="edges" id="edge-svg"></svg>
 </div>
 
+<div class="focus-backdrop" id="focus-backdrop">
+  <div class="focus-panel" id="focus-panel" onclick="event.stopPropagation()">
+    <div class="focus-title">
+      <span>Lineage focus — <b id="focus-name"></b></span>
+      <span class="focus-hint">Click a related table to re-focus · click outside to exit</span>
+    </div>
+    <div class="focus-stage">
+      <div class="focus-cols" id="focus-cols"></div>
+      <svg class="focus-svg" id="focus-svg"></svg>
+    </div>
+  </div>
+</div>
+
 <script>
 const TABLES = {tables_json};
 const EDGES  = {edges_json};
@@ -454,12 +526,13 @@ function render() {{
       d.addEventListener('mouseleave', () => {{ if (!pinnedId) clearHL(); }});
       d.addEventListener('click', (e) => {{
         e.stopPropagation();
-        if (pinnedId === t.id) {{
-          pinnedId = null;
-          clearHL();
+        if (e.target.closest('a')) return;   // let Docs/ETL links work
+        if (hasRelations(t.id)) {{            // related tables -> open focus overlay
+          openFocus(t.id);
+        }} else if (pinnedId === t.id) {{      // no relations -> old pin behaviour
+          pinnedId = null; clearHL();
         }} else {{
-          pinnedId = t.id;
-          highlight(t.id);
+          pinnedId = t.id; highlight(t.id);
         }}
       }});
       col.appendChild(d);
@@ -561,6 +634,135 @@ document.addEventListener('click', () => {{
     clearHL();
   }}
 }});
+
+// ===== Focus mode =====
+const TABLE_BY_ID = {{}};
+TABLES.forEach(t => TABLE_BY_ID[t.id] = t);
+
+const UP = {{}};   // id -> set of direct sources (feeds into id)
+const DOWN = {{}}; // id -> set of direct targets (id feeds into)
+EDGES.forEach(e => {{
+  (DOWN[e.from] = DOWN[e.from] || new Set()).add(e.to);
+  (UP[e.to]     = UP[e.to]     || new Set()).add(e.from);
+}});
+
+function relatedSet(id) {{
+  // full chain: all ancestors (upstream) + all descendants (downstream) + self
+  const seen = new Set([id]);
+  (function up(n){{ (UP[n]||[]).forEach(p => {{ if(!seen.has(p)){{ seen.add(p); up(p);}} }}); }})(id);
+  (function dn(n){{ (DOWN[n]||[]).forEach(c => {{ if(!seen.has(c)){{ seen.add(c); dn(c);}} }}); }})(id);
+  return seen;
+}}
+
+function hasRelations(id) {{
+  return (UP[id] && UP[id].size) || (DOWN[id] && DOWN[id].size);
+}}
+
+const LAYER_ORDER = ['bronze','silver','gold','review'];
+const LAYER_LABEL = {{bronze:'Bronze', silver:'Silver', gold:'Gold', review:'Review'}};
+
+function openFocus(centerId) {{
+  if (!hasRelations(centerId)) return;   // do nothing for unrelated tables
+  const ids = relatedSet(centerId);
+  const cols = document.getElementById('focus-cols');
+  cols.innerHTML = '';
+  document.getElementById('focus-name').textContent =
+    (TABLE_BY_ID[centerId].schema + '.' + TABLE_BY_ID[centerId].name);
+
+  LAYER_ORDER.forEach(layer => {{
+    const members = [...ids].filter(i => TABLE_BY_ID[i] && TABLE_BY_ID[i].layer === layer);
+    if (!members.length) return;
+    const col = document.createElement('div');
+    col.className = 'focus-col';
+    const lbl = document.createElement('div');
+    lbl.className = 'focus-col-lbl';
+    lbl.textContent = LAYER_LABEL[layer];
+    col.appendChild(lbl);
+    members.forEach(i => col.appendChild(buildFocusCard(i, centerId)));
+    cols.appendChild(col);
+  }});
+
+  document.getElementById('focus-backdrop').classList.add('show');
+  setTimeout(() => drawFocusEdges(ids), 30);
+}}
+
+function buildFocusCard(id, centerId) {{
+  const t = TABLE_BY_ID[id];
+  const d = document.createElement('div');
+  d.className = 'fcard' + (id === centerId ? ' is-center' : '');
+  d.id = 'fcard-' + id;
+  d.innerHTML = `
+    <div class="card-top">
+      <div class="card-meta">
+        <div class="schema-lbl">${{t.schema}}</div>
+        <div class="tname">${{t.name}}</div>
+      </div>
+      ${{badgesHTML(t)}}
+    </div>
+    <div class="card-links">
+      ${{linkHTML('Docs', t.docs_url, t.docs_active)}}
+      ${{linkHTML('ETL',  t.etl_url,  t.etl_active)}}
+    </div>`;
+  if (id !== centerId) {{
+    d.addEventListener('click', (e) => {{
+      if (e.target.closest('a')) return;   // let links work
+      e.stopPropagation();
+      openFocus(id);                        // re-focus on the clicked related table
+    }});
+  }}
+  return d;
+}}
+
+function fcardRect(id, stageRect) {{
+  const el = document.getElementById('fcard-' + id);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return {{
+    left: r.left - stageRect.left,
+    right: r.right - stageRect.left,
+    cy: r.top - stageRect.top + r.height/2,
+  }};
+}}
+
+function drawFocusEdges(ids) {{
+  const svg = document.getElementById('focus-svg');
+  const stage = svg.parentElement.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${{svg.parentElement.offsetWidth}} ${{svg.parentElement.offsetHeight}}`);
+  svg.innerHTML = `<defs><marker id="fah" viewBox="0 0 10 10" refX="8" refY="5"
+    markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+  EDGES.forEach(e => {{
+    if (!ids.has(e.from) || !ids.has(e.to)) return;
+    const fr = fcardRect(e.from, stage), to = fcardRect(e.to, stage);
+    if (!fr || !to) return;
+    const x1 = fr.right + 1, y1 = fr.cy, x2 = to.left - 1, y2 = to.cy;
+    const cx = (x1 + x2) / 2;
+    const stroke = e.type === 'multi' ? '#378ADD' : '#8aa0b8';
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M${{x1}},${{y1}} C${{cx}},${{y1}} ${{cx}},${{y2}} ${{x2}},${{y2}}`);
+    p.setAttribute('fill','none'); p.setAttribute('stroke', stroke);
+    p.setAttribute('stroke-width','1.8'); p.setAttribute('opacity','0.8');
+    p.setAttribute('marker-end','url(#fah)');
+    if (e.type === 'multi') p.setAttribute('stroke-dasharray','5 3');
+    svg.appendChild(p);
+  }});
+}}
+
+function closeFocus() {{
+  document.getElementById('focus-backdrop').classList.remove('show');
+}}
+
+document.getElementById('focus-backdrop').addEventListener('click', closeFocus);
+document.addEventListener('keydown', (e) => {{ if (e.key === 'Escape') closeFocus(); }});
+window.addEventListener('resize', () => {{
+  const bd = document.getElementById('focus-backdrop');
+  if (bd.classList.contains('show')) {{
+    const center = document.querySelector('.fcard.is-center');
+    if (center) drawFocusEdges(relatedSet(center.id.replace('fcard-','')));
+  }}
+}});
+
 render();
 </script>
 </body>
